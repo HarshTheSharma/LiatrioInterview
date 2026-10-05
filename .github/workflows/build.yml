@@ -10,3 +10,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Build image
         run: docker build -t api-app .
+      - name: Run
+        run: docker run -p 80:8080 api-app
+      - name: Test
+        uses: liatrio/github-actions/apprentice-action@master
