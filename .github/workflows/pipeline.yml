@@ -4,7 +4,8 @@ on: push
 
 jobs:
   pipeline:
-    runs-on: ubuntu-latest
+    name: Build, Test, & Push
+    runs-on: ubuntu-24.04
     env:
       IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/api-app:${{ github.sha }}
     steps:
@@ -17,9 +18,11 @@ jobs:
       - name: Test
         uses: liatrio/github-actions/apprentice-action@0b41561cca6822cc8d880fe0e49e7807a41fdf91
       - name: Auth DockerHub
+        if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push Image To DockerHub
+        if: github.ref == 'refs/heads/main'
         run: docker push $IMAGE_TAG
