@@ -1,0 +1,27 @@
+name: Deploy To GCP
+
+on:
+  workflow_run:
+    workflows: [Pipeline]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy To Cloud Run
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+    steps:
+      - name: Auth Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+      - name: Deploy To Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: api-app
+          image: docker.io/${{ vars.DOCKERHUB_USERNAME }}/api-app:${{ github.event.workflow_run.head_sha }}
+          flags: --no-invoker-iam-check --service-account=api-app@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
