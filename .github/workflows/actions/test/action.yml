@@ -1,0 +1,6 @@
+name: Liatrio
+description: Runs Liatrio's apprentice-action against the running container
+runs:
+  using: composite
+  steps:
+    - uses: liatrio/github-actions/apprentice-action@0b41561cca6822cc8d880fe0e49e7807a41fdf91

@@ -1,22 +1,32 @@
 name: Pipeline
 
-on: push
+on:
+  push:
+  workflow_call:
+    secrets:
+      DOCKERHUB_TOKEN:
+        required: true
 
 jobs:
   pipeline:
     name: Build, Test, & Push
     runs-on: ubuntu-24.04
     env:
-      IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/api-app:${{ github.sha }}
+      IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP_NAME }}:${{ github.sha }}
+      CONTAINER_PORT: ${{ vars.CONTAINER_PORT || '8080' }}
+      HEALTH_PATH: ${{ vars.HEALTH_PATH || '/' }}
     steps:
       - name: Pull source code
         uses: actions/checkout@v7
       - name: Build
-        run: docker build -t $IMAGE_TAG .
+        run: docker build -t "$IMAGE_TAG" .
       - name: Run
-        run: docker run -d -p 80:8080 $IMAGE_TAG
+        run: docker run -d -p "80:$CONTAINER_PORT" "$IMAGE_TAG"
+      - name: Wait for container
+        run: curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 "http://localhost$HEALTH_PATH"
       - name: Test
-        uses: liatrio/github-actions/apprentice-action@0b41561cca6822cc8d880fe0e49e7807a41fdf91
+        if: hashFiles('.github/actions/test/action.yml') != ''
+        uses: ./.github/actions/test
       - name: Auth DockerHub
         if: github.ref == 'refs/heads/main'
         uses: docker/login-action@v4
@@ -25,4 +35,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push Image To DockerHub
         if: github.ref == 'refs/heads/main'
-        run: docker push $IMAGE_TAG
+        run: docker push "$IMAGE_TAG"
